@@ -55,7 +55,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #if defined(HAVE_LIBKVM) && defined(HAVE_STDINT_H) && defined(HAVE_KVM_H)
 #include <stdint.h>
 #include <kvm.h>
-kvm_t *kd;
+// kvm_t *kd;
 extern int can_use_kvm;
 #endif
 

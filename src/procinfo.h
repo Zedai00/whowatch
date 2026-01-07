@@ -32,4 +32,5 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 #ifdef HAVE_LIBKVM
 #include <kvm.h>
+extern kvm_t *kd;
 #endif

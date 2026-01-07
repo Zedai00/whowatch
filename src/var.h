@@ -19,19 +19,21 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 */
 
-#define DU(B) typedef u_int ## B ## _t u ## B
-DU(8); DU(16); DU(32); DU(64);
-#undef DU
+#include <stdint.h>
 
-#define MIN(x,y)	(x)<(y)?(x):(y)
+typedef uint8_t u8;
+typedef uint16_t u16;
+typedef uint32_t u32;
+typedef uint64_t u64;
 
-//#if 1
+#define MIN(x, y) (x) < (y) ? (x) : (y)
+
+// #if 1
 #ifdef DEBUG
-#define DBG(f,a...)	dolog("%s %d: " f, __FUNCTION__, __LINE__ , ##a)
+#define DBG(f, a...) dolog("%s %d: " f, __FUNCTION__, __LINE__, ##a)
 #else
-#define DBG(f,a...)	/* */
+#define DBG(f, a...) /* */
 #endif
 
-#define elemof(x)	(sizeof (x) / sizeof*(x))
-#define endof(x)	((x) + elemof(x))
-
+#define elemof(x) (sizeof(x) / sizeof *(x))
+#define endof(x) ((x) + elemof(x))
