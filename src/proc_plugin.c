@@ -33,6 +33,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include <err.h>
 
 #ifdef __FreeBSD__
+#include <sys/resource.h>
 #include <sys/sysctl.h>
 #include <sys/time.h>
 #endif
@@ -516,6 +517,32 @@ static struct cpu_info_t *prev_cpu_info = &p_info;
  * Get current CPU load values and leave previous one.
  * (just a pointers replacement)
  */
+#ifdef __FreeBSD__
+static int fill_cpu_info(void) {
+  char buf[64];
+  struct cpu_info_t *tmp;
+  int i = 0;
+  tmp = prev_cpu_info;
+  prev_cpu_info = cur_cpu_info;
+  cur_cpu_info = tmp;
+  long cp_time[CPUSTATES];
+  size_t len = sizeof(cp_time);
+
+  if (sysctlbyname("kern.cp_time", cp_time, &len, NULL, 0) == -1)
+    return -1;
+
+  cur_cpu_info->u_mode = cp_time[CP_USER];
+  cur_cpu_info->nice = cp_time[CP_NICE];
+  cur_cpu_info->s_mode = cp_time[CP_SYS];
+  cur_cpu_info->idle = cp_time[CP_IDLE];
+
+  eff_info.u_mode = cur_cpu_info->u_mode - prev_cpu_info->u_mode;
+  eff_info.nice = cur_cpu_info->nice - prev_cpu_info->nice;
+  eff_info.s_mode = cur_cpu_info->s_mode - prev_cpu_info->s_mode;
+  eff_info.idle = cur_cpu_info->idle - prev_cpu_info->idle;
+  return 0;
+}
+#else
 static int fill_cpu_info(void) {
   char buf[64];
   FILE *f;
@@ -545,6 +572,7 @@ FOUND:
   eff_info.idle = cur_cpu_info->idle - prev_cpu_info->idle;
   return 0;
 }
+#endif
 
 static inline float prcnt(unsigned long i, unsigned long v) {
   if (!v)
