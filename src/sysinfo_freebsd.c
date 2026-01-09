@@ -1,7 +1,10 @@
+#include "pluglib.h"
 #include "sysinfo.h"
+#include <stdint.h>
 #include <sys/resource.h>
 #include <sys/sysctl.h>
 #include <sys/time.h>
+#include <sys/types.h>
 #include <time.h>
 
 time_t sys_boot_time() {
@@ -29,4 +32,38 @@ int sys_cpu_info(struct cpu_info_t *cur_cpu_info) {
   cur_cpu_info->idle = cp_time[CP_IDLE];
 
   return 0;
+}
+
+void sys_mem_info(void) {
+  uint64_t pagesize, physmem;
+  u_int v_free, v_active, v_inactive, v_cache, swap_total, swap_used;
+  size_t len;
+
+  len = sizeof(pagesize);
+  sysctlbyname("hw.pagesize", &pagesize, &len, NULL, 0);
+
+  len = sizeof(physmem);
+  sysctlbyname("hw.physmem", &physmem, &len, NULL, 0);
+
+  len = sizeof(pagesize);
+  sysctlbyname("hw.pagesize", &pagesize, &len, NULL, 0);
+
+  len = sizeof(u_int);
+  sysctlbyname("vm.stats.vm.v_free_count", &v_free, &len, NULL, 0);
+  sysctlbyname("vm.stats.vm.v_active_count", &v_active, &len, NULL, 0);
+  sysctlbyname("vm.stats.vm.v_inactive_count", &v_inactive, &len, NULL, 0);
+  sysctlbyname("vm.stats.vm.v_cache_count", &v_cache, &len, NULL, 0);
+  sysctlbyname("vm.swap_total", &swap_total, &len, NULL, 0);
+  sysctlbyname("vm.swap_reserved", &swap_used, &len, NULL, 0);
+
+  println("MemTotal: %llu kB\n", physmem / 1024);
+  println("MemFree: %llu kB\n", (uint64_t)v_free * pagesize / 1024);
+  println("MemAvailable: %llu kB\n",
+          (uint64_t)(v_free + v_inactive + v_cache) * pagesize / 1024);
+  println("Active: %llu kB\n", (uint64_t)v_active * pagesize / 1024);
+  println("Inactive: %llu kB\n", (uint64_t)v_inactive * pagesize / 1024);
+  println("Cached: %llu kB\n", (uint64_t)v_cache * pagesize / 1024);
+  println("SwapTotal: %llu kB\n", (uint64_t)swap_total / 1024);
+  println("SwapUsed: %llu kB\n", (uint64_t)swap_used / 1024);
+  println("SwapFree: %llu kB\n", (uint64_t)(swap_total - swap_used) / 1024);
 }

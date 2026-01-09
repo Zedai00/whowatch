@@ -413,46 +413,6 @@ FOUND:
   return c / HZ;
 }
 
-/*
- * Get Boot Time of the system
- * Linux: Read /proc for the information
- * FreeBSD: Use sysctl API
- */
-
-// #ifdef __FreeBSD__
-// static time_t get_boot_time(void) {
-//   static time_t boot_time;
-//   struct timeval tv;
-//   size_t len = sizeof(tv);
-//   int mib[2];
-//   mib[0] = CTL_KERN;
-//   mib[1] = KERN_BOOTTIME;
-//   sysctl(mib, 2, &tv, &len, NULL, 0);
-//   boot_time = tv.tv_sec;
-//   return boot_time;
-// }
-// #else
-// static time_t get_boot_time(void) {
-//   char buf[32];
-//   static time_t boot_time;
-//   FILE *f;
-//
-//   if (boot_time)
-//     return boot_time;
-//   if (!(f = fopen("/proc/stat", "r")))
-//     return boot_time;
-//   while (fgets(buf, sizeof buf, f))
-//     if (!strncmp(buf, "btime ", 6))
-//       goto FOUND;
-//   fclose(f);
-//   return boot_time;
-// FOUND:
-//   fclose(f);
-//   sscanf(buf + 5, "%ld", &boot_time);
-//   return boot_time;
-// }
-// #endif
-
 static void proc_starttime(int pid, char *name) {
   unsigned long i, sec;
   char *s;
@@ -547,7 +507,7 @@ void esys(void *unused) {
   get_cpu_info();
   title("MEMORY:");
   newln();
-  read_proc_file("/proc/meminfo", "MemTotal:", NULL);
+  sys_mem_info();
   title("USED FILES: ");
   ;
 

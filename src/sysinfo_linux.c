@@ -1,3 +1,4 @@
+#include "pluglib.h"
 #include "sysinfo.h"
 #include <stdio.h>
 #include <string.h>
@@ -45,3 +46,40 @@ int sys_cpu_info(struct cpu_info_t *curr) {
   fclose(f);
   return -1;
 }
+
+static inline void no_info(void) { println("Information unavailable.\n"); }
+
+static void read_proc_file(char *name, char *start, char *end) {
+  char buf[128];
+  int ok = 0;
+  int slen, elen;
+  FILE *f;
+  slen = elen = 0;
+  if (start)
+    slen = strlen(start);
+  if (end)
+    elen = strlen(end);
+  f = fopen(name, "r");
+  if (!f) {
+    no_info();
+    return;
+  }
+  if (!start)
+    ok = 1;
+  while (fgets(buf, sizeof buf, f)) {
+    if (!ok && !strncmp(buf, start, slen))
+      ok = 1;
+    if (end && !strncmp(buf, end, elen))
+      goto END;
+    if (!ok)
+      continue;
+    println(buf);
+    //		newln();
+  }
+END:
+  if (!ok)
+    no_info();
+  fclose(f);
+}
+
+void sys_mem_info(void) { read_proc_file("/proc/meminfo", "MemTotal:", NULL); }
