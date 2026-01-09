@@ -122,6 +122,11 @@ esac
 
 AM_CONDITIONAL([FREEBSD], [test "x$is_freebsd" = "xyes"])
 AM_CONDITIONAL([LINUX],   [test "x$is_linux"   = "xyes"])
+AM_CONDITIONAL([DEBUG], [test "x$enable_debug" = "xyes"])
+AC_ARG_ENABLE([debug],
+  AS_HELP_STRING([--enable-debug], [enable debug symbols]),
+  [enable_debug=$enableval],
+  [enable_debug=no])
 
 AC_CONFIG_FILES([Makefile src/Makefile])
 AC_OUTPUT

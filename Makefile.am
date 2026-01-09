@@ -30,3 +30,8 @@ dist-hook:
 EXTRA_DIST = \
 	ChangeLog.old \
 	PLUGINS.readme
+
+if DEBUG
+AM_CFLAGS = -g
+endif
+
