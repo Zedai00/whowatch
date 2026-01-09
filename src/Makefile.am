@@ -39,4 +39,13 @@ whowatch_SOURCES = \
 	user_plugin.c \
 	var.h \
 	kbd.c \
-	kbd.h
+	kbd.h \
+	sysinfo.h
+
+if FREEBSD
+whowatch_SOURCES += sysinfo_freebsd.c
+endif
+
+if LINUX
+whowatch_SOURCES += sysinfo_linux.c
+endif

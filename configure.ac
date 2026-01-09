@@ -22,6 +22,7 @@ AM_INIT_AUTOMAKE([foreign])
 AC_CONFIG_SRCDIR([src/whowatch.c])
 AC_CONFIG_HEADER([src/config.h])
 
+
 dnl Checks for programs.
 AC_PROG_CC
 AC_PROG_INSTALL
@@ -108,6 +109,19 @@ AC_CHECK_MEMBERS([struct kinfo_proc.kp_proc], , ,
 #include <sys/sysctl.h>
 #include <sys/proc.h>
 ])
+
+dnl Checks for operating system
+case "$host_os" in
+  freebsd*)
+    is_freebsd=yes
+    ;;
+  linux*)
+    is_linux=yes
+    ;;
+esac
+
+AM_CONDITIONAL([FREEBSD], [test "x$is_freebsd" = "xyes"])
+AM_CONDITIONAL([LINUX],   [test "x$is_linux"   = "xyes"])
 
 AC_CONFIG_FILES([Makefile src/Makefile])
 AC_OUTPUT

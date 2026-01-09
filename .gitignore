@@ -18,4 +18,4 @@ src/whowatch
 src/proc_plugin.c
 src/procinfo.c
 src/procinfo.h
-
+.clangd
