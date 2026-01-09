@@ -506,94 +506,34 @@ static inline void print_boot_time(void) {
     no_info();
 }
 
-struct cpu_info_t {
-  unsigned long long u_mode, nice, s_mode, idle;
-};
-
-static struct cpu_info_t c_info, p_info, eff_info;
-static struct cpu_info_t *cur_cpu_info = &c_info;
-static struct cpu_info_t *prev_cpu_info = &p_info;
-
-/*
- * Get current CPU load values and leave previous one.
- * (just a pointers replacement)
- */
-#ifdef __FreeBSD__
-static int fill_cpu_info(void) {
-  char buf[64];
-  struct cpu_info_t *tmp;
-  int i = 0;
-  tmp = prev_cpu_info;
-  prev_cpu_info = cur_cpu_info;
-  cur_cpu_info = tmp;
-  long cp_time[CPUSTATES];
-  size_t len = sizeof(cp_time);
-
-  if (sysctlbyname("kern.cp_time", cp_time, &len, NULL, 0) == -1)
-    return -1;
-
-  cur_cpu_info->u_mode = cp_time[CP_USER];
-  cur_cpu_info->nice = cp_time[CP_NICE];
-  cur_cpu_info->s_mode = cp_time[CP_SYS];
-  cur_cpu_info->idle = cp_time[CP_IDLE];
-
-  eff_info.u_mode = cur_cpu_info->u_mode - prev_cpu_info->u_mode;
-  eff_info.nice = cur_cpu_info->nice - prev_cpu_info->nice;
-  eff_info.s_mode = cur_cpu_info->s_mode - prev_cpu_info->s_mode;
-  eff_info.idle = cur_cpu_info->idle - prev_cpu_info->idle;
-  return 0;
-}
-#else
-static int fill_cpu_info(void) {
-  char buf[64];
-  FILE *f;
-  struct cpu_info_t *tmp;
-  int i = 0;
-  snprintf(buf, sizeof buf, "/proc/stat");
-  f = fopen(buf, "r");
-  if (!f)
-    return -1;
-  while (fgets(buf, sizeof buf, f))
-    if (!strncmp(buf, "cpu ", 4))
-      goto FOUND;
-  fclose(f);
-  return -1;
-FOUND:
-  tmp = prev_cpu_info;
-  prev_cpu_info = cur_cpu_info;
-  cur_cpu_info = tmp;
-  i = sscanf(buf + 5, "%lld %lld %lld %lld", &tmp->u_mode, &tmp->nice,
-             &tmp->s_mode, &tmp->idle);
-  fclose(f);
-  if (i != 4)
-    return -1;
-  eff_info.u_mode = cur_cpu_info->u_mode - prev_cpu_info->u_mode;
-  eff_info.nice = cur_cpu_info->nice - prev_cpu_info->nice;
-  eff_info.s_mode = cur_cpu_info->s_mode - prev_cpu_info->s_mode;
-  eff_info.idle = cur_cpu_info->idle - prev_cpu_info->idle;
-  return 0;
-}
-#endif
-
 static inline float prcnt(unsigned long i, unsigned long v) {
   if (!v)
     return 0;
   return ((float)(i * 100)) / (float)v;
 }
 
+static struct cpu_info_t cur, prev, eff;
+
 /*
- * Based on values taken by fill_cpu_info() calculate
+ * Based on values taken by sys_cpu_info() calculate
  * and print CPU load (user, system, nice and idle).
  */
 static void get_cpu_info() {
   char buf[64];
   unsigned long z;
-  if (fill_cpu_info() == -1)
+  prev = cur;
+  if (sys_cpu_info(&cur) == -1)
     no_info();
-  z = eff_info.u_mode + eff_info.nice + eff_info.s_mode + eff_info.idle;
+
+  eff.u_mode = cur.u_mode - prev.u_mode;
+  eff.nice = cur.nice - prev.nice;
+  eff.s_mode = cur.s_mode - prev.s_mode;
+  eff.idle = cur.idle - prev.idle;
+
+  z = eff.u_mode + eff.nice + eff.s_mode + eff.idle;
   snprintf(buf, sizeof buf, "%.1f%% user %.1f%% sys %.1f%% nice %.1f%% idle\n",
-           prcnt(eff_info.u_mode, z), prcnt(eff_info.s_mode, z),
-           prcnt(eff_info.nice, z), prcnt(eff_info.idle, z));
+           prcnt(eff.u_mode, z), prcnt(eff.s_mode, z), prcnt(eff.nice, z),
+           prcnt(eff.idle, z));
   print("%s", buf);
 }
 
