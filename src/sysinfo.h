@@ -13,3 +13,5 @@ void sys_mem_info(void);
 long long sys_open_files(void);
 
 long long sys_open_inodes(void);
+
+long long sys_max_files(void);

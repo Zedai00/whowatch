@@ -497,6 +497,14 @@ static void get_cpu_info() {
   print("%s", buf);
 }
 
+void print_or_no(long long val) {
+  if (val == -1) {
+    no_info();
+  } else {
+    println("%lld", val);
+  }
+}
+
 void esys(void *unused) {
   long long c;
   plgn_out_start();
@@ -513,24 +521,17 @@ void esys(void *unused) {
 
   title("USED FILES: ");
   c = sys_open_files();
-  if (c == -1) {
-    no_info();
-  } else {
-    println("%lld", c);
-  }
+  print_or_no(c);
 
   title("\nUSED INODES: ");
-
-  // c = read_file_pos("/proc/sys/fs/inode-nr", 2);
   c = sys_open_inodes();
-  if (c == -1)
-    no_info();
-  else
-    println("%lld", c);
+  print_or_no(c);
 
   title("\nMAX FILES: ");
-  read_proc_file("/proc/sys/fs/file-max", NULL, NULL);
-  title("MAX INODES: ");
+  c = sys_max_files();
+  print_or_no(c);
+
+  title("\nMAX INODES: ");
   read_proc_file("/proc/sys/fs/inode-max", NULL, NULL);
   title("\nSTAT:");
   newln();

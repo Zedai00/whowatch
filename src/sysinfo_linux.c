@@ -82,7 +82,7 @@ END:
   fclose(f);
 }
 
-int read_file_pos(char *name, int pos) {
+long long read_file_pos(char *name, int pos) {
   FILE *f;
   long long val;
 
@@ -125,4 +125,11 @@ long long sys_open_inodes() {
     return -1;
 
   return alloc - unused;
+}
+
+long long sys_max_files() {
+  long long maxfiles = read_file_pos("/proc/sys/fs/file-max", 0);
+  if (maxfiles == -1)
+    return -1;
+  return maxfiles;
 }

@@ -74,11 +74,9 @@ long long sys_open_files() {
   u_int openfiles;
   size_t len;
   len = sizeof(openfiles);
-  if (sysctlbyname("kern.openfiles", &openfiles, &len, NULL, 0) == -1) {
+  if (sysctlbyname("kern.openfiles", &openfiles, &len, NULL, 0) == -1)
     return -1;
-  } else {
-    return openfiles;
-  }
+  return openfiles;
 }
 
 long long sys_open_inodes() {
@@ -87,4 +85,14 @@ long long sys_open_inodes() {
     return -1;
   }
   return s.f_files - s.f_ffree;
+}
+
+long long sys_max_files() {
+  u_int maxfiles;
+  size_t len;
+  len = sizeof(len);
+  if (sysctlbyname("kern.maxfiles", &maxfiles, &len, NULL, 0) == -1) {
+    return -1;
+  }
+  return maxfiles;
 }
