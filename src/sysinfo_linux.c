@@ -82,4 +82,32 @@ END:
   fclose(f);
 }
 
+int read_file_pos(char *name, int pos) {
+  FILE *f;
+  long long val;
+
+  f = fopen(name, "r");
+  if (!f)
+    return -1;
+
+  for (int i = 0; i <= pos; i++) {
+    if (fscanf(f, "%lld", &val) != 1) {
+      fclose(f);
+      return -1;
+    }
+  }
+
+  fclose(f);
+  return val;
+}
+
 void sys_mem_info(void) { read_proc_file("/proc/meminfo", "MemTotal:", NULL); }
+
+long long sys_open_files() {
+  long long c = read_file_pos("/proc/sys/fs/file-nr", 0);
+  if (c == -1) {
+    return -1;
+  } else {
+    return c;
+  }
+}

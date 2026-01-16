@@ -498,24 +498,27 @@ static void get_cpu_info() {
 }
 
 void esys(void *unused) {
-  int c;
+  long long c;
   plgn_out_start();
 
   title("BOOT TIME: ");
   print_boot_time();
+
   title("CPU: ");
   get_cpu_info();
+
   title("MEMORY:");
   newln();
   sys_mem_info();
-  title("USED FILES: ");
-  ;
 
-  c = read_file_pos("/proc/sys/fs/file-nr", 2);
-  if (c == -1)
+  title("USED FILES: ");
+  c = sys_open_files();
+  if (c == -1) {
     no_info();
-  else
-    println("%d", c);
+  } else {
+    println("%lld", c);
+  }
+
   title("\nUSED INODES: ");
 
   c = read_file_pos("/proc/sys/fs/inode-nr", 2);

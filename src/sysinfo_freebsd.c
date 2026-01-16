@@ -67,3 +67,14 @@ void sys_mem_info(void) {
   println("SwapUsed: %llu kB\n", (uint64_t)swap_used / 1024);
   println("SwapFree: %llu kB\n", (uint64_t)(swap_total - swap_used) / 1024);
 }
+
+long long sys_open_files() {
+  u_int openfiles;
+  size_t len;
+  len = sizeof(openfiles);
+  if (sysctlbyname("kern.openfiles", &openfiles, &len, NULL, 0) == -1) {
+    return -1;
+  } else {
+    return openfiles;
+  }
+}

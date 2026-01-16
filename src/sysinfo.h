@@ -9,3 +9,5 @@ struct cpu_info_t {
 int sys_cpu_info(struct cpu_info_t *curr);
 
 void sys_mem_info(void);
+
+long long sys_open_files(void);
