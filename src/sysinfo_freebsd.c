@@ -1,6 +1,8 @@
 #include "pluglib.h"
 #include "sysinfo.h"
 #include <stdint.h>
+#include <sys/mount.h>
+#include <sys/param.h>
 #include <sys/resource.h>
 #include <sys/sysctl.h>
 #include <sys/time.h>
@@ -77,4 +79,12 @@ long long sys_open_files() {
   } else {
     return openfiles;
   }
+}
+
+long long sys_open_inodes() {
+  struct statfs s;
+  if (statfs("/", &s) == -1) {
+    return -1;
+  }
+  return s.f_files - s.f_ffree;
 }

@@ -316,32 +316,32 @@ void open_fds(int pid, char *name) {
  * Returns int value at 'pos' position from proc file
  * that contains numbers separated by spaces.
  */
-static int read_file_pos(char *name, int pos) {
-  FILE *f;
-  int i;
-  int c = 1;
-  f = fopen(name, "r");
-  if (!f)
-    return -1;
-  while ((i = fgetc(f)) != EOF) {
-    if (i == ' ' || i == '\t') {
-      c++;
-      while ((i = fgetc(f)) == ' ')
-        ;
-      ungetc(i, f);
-    }
-    if (c == pos)
-      goto FOUND;
-  }
-  fclose(f);
-  return -1;
-FOUND:
-  i = fscanf(f, "%d", &c);
-  fclose(f);
-  if (i != 1)
-    return -1;
-  return c;
-}
+// static int read_file_pos(char *name, int pos) {
+//   FILE *f;
+//   int i;
+//   int c = 1;
+//   f = fopen(name, "r");
+//   if (!f)
+//     return -1;
+//   while ((i = fgetc(f)) != EOF) {
+//     if (i == ' ' || i == '\t') {
+//       c++;
+//       while ((i = fgetc(f)) == ' ')
+//         ;
+//       ungetc(i, f);
+//     }
+//     if (c == pos)
+//       goto FOUND;
+//   }
+//   fclose(f);
+//   return -1;
+// FOUND:
+//   i = fscanf(f, "%d", &c);
+//   fclose(f);
+//   if (i != 1)
+//     return -1;
+//   return c;
+// }
 
 static void read_proc_file(char *name, char *start, char *end) {
   char buf[128];
@@ -521,11 +521,12 @@ void esys(void *unused) {
 
   title("\nUSED INODES: ");
 
-  c = read_file_pos("/proc/sys/fs/inode-nr", 2);
+  // c = read_file_pos("/proc/sys/fs/inode-nr", 2);
+  c = sys_open_inodes();
   if (c == -1)
     no_info();
   else
-    println("%d", c);
+    println("%lld", c);
 
   title("\nMAX FILES: ");
   read_proc_file("/proc/sys/fs/file-max", NULL, NULL);

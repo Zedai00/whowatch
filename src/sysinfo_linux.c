@@ -104,10 +104,25 @@ int read_file_pos(char *name, int pos) {
 void sys_mem_info(void) { read_proc_file("/proc/meminfo", "MemTotal:", NULL); }
 
 long long sys_open_files() {
-  long long c = read_file_pos("/proc/sys/fs/file-nr", 0);
-  if (c == -1) {
+  long long allocated = read_file_pos("/proc/sys/fs/file-nr", 0);
+  if (allocated == -1)
     return -1;
-  } else {
-    return c;
-  }
+
+  long long unused = read_file_pos("/proc/sys/fs/file-nr", 1);
+  if (unused == -1)
+    return -1;
+
+  return allocated - unused;
+}
+
+long long sys_open_inodes() {
+  long long alloc = read_file_pos("/proc/sys/fs/inode-nr", 0);
+  if (alloc == -1)
+    return -1;
+
+  long long unused = read_file_pos("/proc/sys/fs/inode-nr", 1);
+  if (unused == -1)
+    return -1;
+
+  return alloc - unused;
 }
