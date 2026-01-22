@@ -531,8 +531,6 @@ void esys(void *unused) {
   c = sys_max_files();
   print_or_no(c);
 
-  title("\nMAX INODES: ");
-  read_proc_file("/proc/sys/fs/inode-max", NULL, NULL);
   title("\nSTAT:");
   newln();
 
