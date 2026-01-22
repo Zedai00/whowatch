@@ -1,5 +1,6 @@
 #include "pluglib.h"
 #include "sysinfo.h"
+#include <machine/param.h>
 #include <stdint.h>
 #include <sys/mount.h>
 #include <sys/param.h>
@@ -8,6 +9,8 @@
 #include <sys/time.h>
 #include <sys/types.h>
 #include <time.h>
+
+static inline void no_info(void) { println("Information unavailable.\n"); }
 
 time_t sys_boot_time() {
   static time_t boot_time;
@@ -95,4 +98,40 @@ long long sys_max_files() {
     return -1;
   }
   return maxfiles;
+}
+
+void sys_stat_info() {
+  long cp_time[CPUSTATES];
+  size_t len = sizeof(cp_time);
+  if (sysctlbyname("kern.cp_time", cp_time, &len, NULL, 0) == -1) {
+    no_info();
+    return;
+  }
+  print("cpu ");
+  for (int i = 0; i < CPUSTATES; i++) {
+    print("%ld ", cp_time[i]);
+  }
+  newln();
+
+  int ncpu;
+  len = sizeof(ncpu);
+  if (sysctlbyname("hw.ncpu", &ncpu, &len, NULL, 0) == -1) {
+    no_info();
+    return;
+  }
+
+  long cp_times[ncpu * CPUSTATES];
+  len = sizeof(cp_times);
+  if (sysctlbyname("kern.cp_times", cp_times, &len, NULL, 0) == -1) {
+    no_info();
+  }
+  for (int cpu = 0; cpu < ncpu; cpu++) {
+    print("cpu%d ", cpu);
+    long *times = &cp_times[cpu * CPUSTATES];
+    for (int t = 0; t < CPUSTATES; t++) {
+      print("%ld ", times[t]);
+    }
+    newln();
+  }
+  return;
 }

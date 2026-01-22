@@ -134,3 +134,4 @@ long long sys_max_files() {
   return maxfiles;
 }
 
+void sys_stat_info() { read_proc_file("/proc/stat", "cpu", "intr"); }

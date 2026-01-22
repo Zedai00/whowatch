@@ -534,7 +534,7 @@ void esys(void *unused) {
   title("\nSTAT:");
   newln();
 
-  read_proc_file("/proc/stat", "cpu", "intr");
+  sys_stat_info();
   title("\nLOADED MODULES:");
   newln();
 
