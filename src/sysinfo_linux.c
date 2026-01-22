@@ -135,3 +135,5 @@ long long sys_max_files() {
 }
 
 void sys_stat_info() { read_proc_file("/proc/stat", "cpu", "intr"); }
+
+void sys_modules_info() { read_proc_file("/proc/modules", NULL, NULL); }

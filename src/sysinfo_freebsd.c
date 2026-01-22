@@ -2,6 +2,8 @@
 #include "sysinfo.h"
 #include <machine/param.h>
 #include <stdint.h>
+#include <string.h>
+#include <sys/linker.h>
 #include <sys/mount.h>
 #include <sys/param.h>
 #include <sys/resource.h>
@@ -134,4 +136,29 @@ void sys_stat_info() {
     newln();
   }
   return;
+}
+
+void sys_modules_info() {
+  int id = 0;
+  struct kld_file_stat stat;
+
+  // 0 indicates end of modules list
+  while ((id = kldnext(id)) != 0) {
+    if (id == -1) {
+      no_info();
+      return;
+    }
+
+    memset(&stat, 0, sizeof(stat));
+    stat.version = sizeof(stat);
+
+    if (kldstat(id, &stat) == -1) {
+      no_info();
+      return;
+    }
+
+    println("%s %zu %d - Live %p", stat.name, stat.size, stat.refs,
+            stat.address);
+    newln();
+  }
 }

@@ -17,3 +17,5 @@ long long sys_open_inodes(void);
 long long sys_max_files(void);
 
 void sys_stat_info(void);
+
+void sys_modules_info(void);

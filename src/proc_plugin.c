@@ -533,16 +533,16 @@ void esys(void *unused) {
 
   title("\nSTAT:");
   newln();
-
   sys_stat_info();
+
   title("\nLOADED MODULES:");
   newln();
+  sys_modules_info();
 
-  read_proc_file("/proc/modules", NULL, NULL);
   title("\nFILESYSTEMS:");
   newln();
-
   read_proc_file("/proc/filesystems", NULL, NULL);
+
   title("\nPARTITIONS:");
   newln();
 
