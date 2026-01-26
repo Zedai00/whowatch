@@ -1,11 +1,13 @@
 #include "pluglib.h"
 #include "sysinfo.h"
+#include <libgeom.h>
 #include <machine/param.h>
 #include <stdint.h>
 #include <string.h>
 #include <sys/linker.h>
 #include <sys/mount.h>
 #include <sys/param.h>
+#include <sys/queue.h>
 #include <sys/resource.h>
 #include <sys/sysctl.h>
 #include <sys/time.h>
@@ -161,4 +163,27 @@ void sys_modules_info() {
             stat.address);
     newln();
   }
+}
+
+void sys_partitions_info() {
+  struct gmesh mesh;
+  struct gclass *classp;
+  struct ggeom *geomp;
+  struct gprovider *providerp;
+  geom_gettree(&mesh);
+
+  println("Name Size\n");
+  LIST_FOREACH(classp, &mesh.lg_class, lg_class) {
+    if (strcmp(classp->lg_name, "DISK") != 0 &&
+        strcmp(classp->lg_name, "PART") != 0) {
+      continue;
+    }
+    LIST_FOREACH(geomp, &classp->lg_geom, lg_geom) {
+      LIST_FOREACH(providerp, &geomp->lg_provider, lg_provider) {
+        println("%s %lld\n", providerp->lg_name,
+                (unsigned long long)providerp->lg_mediasize);
+      }
+    }
+  }
+  geom_deletetree(&mesh);
 }

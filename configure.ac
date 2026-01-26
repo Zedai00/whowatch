@@ -32,6 +32,7 @@ LDFLAGS="$LDFLAGS -rdynamic"
 
 dnl Checks for libraries
 AC_CHECK_LIB([kvm], [kvm_openfiles])
+AC_CHECK_LIB([geom], [geom_gettree], [LIBS="$LIBS -lgeom"], [AC_MSG_ERROR([libgeom not found])])
 CURS=0
 AC_CHECK_LIB([ncurses], [scrollok], [CURS=1; LIBS="$LIBS -lncurses"])
 if test "$CURS" != "1"; then
