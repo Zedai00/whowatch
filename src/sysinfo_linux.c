@@ -141,3 +141,5 @@ void sys_modules_info() { read_proc_file("/proc/modules", NULL, NULL); }
 void sys_filesystems_info() { read_proc_file("/proc/filesystems", NULL, NULL); }
 
 void sys_partitions_info() { read_proc_file("/proc/partitions", NULL, NULL); }
+
+void sys_devices_info() { read_proc_file("/proc/devices", NULL, NULL); }

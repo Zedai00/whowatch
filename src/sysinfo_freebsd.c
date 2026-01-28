@@ -1,5 +1,6 @@
 #include "pluglib.h"
 #include "sysinfo.h"
+#include <devinfo.h>
 #include <libgeom.h>
 #include <machine/param.h>
 #include <stdint.h>
@@ -270,4 +271,31 @@ void sys_partitions_info() {
     }
   }
   geom_deletetree(&mesh);
+}
+
+static int print_device(struct devinfo_dev *dev, void *arg) {
+  char *name = dev->dd_name[0] ? dev->dd_name : "unknown";
+  char *driver = dev->dd_drivername ? dev->dd_drivername : "unknown";
+  if (dev->dd_name[0] == '\0' || dev->dd_state < DS_ATTACHED)
+    return devinfo_foreach_device_child(dev, print_device, NULL);
+  println("%-20.20s %-20.20s\n", name, driver);
+  return (devinfo_foreach_device_child(dev, print_device, NULL));
+}
+
+void sys_devices_info() {
+  struct devinfo_dev *root;
+  int rv;
+  if ((rv = devinfo_init()) != 0) {
+    no_info();
+    return;
+  }
+
+  if ((root = devinfo_handle_to_device(DEVINFO_ROOT_DEVICE)) == NULL) {
+    no_info();
+    return;
+  }
+
+  println("%-20.20s %-20.20s\n", "NAME", "DRIVER");
+  println("-------------------- -------------------\n");
+  devinfo_foreach_device_child(root, print_device, NULL);
 }

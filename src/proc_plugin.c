@@ -548,7 +548,5 @@ void esys(void *unused) {
   sys_partitions_info();
 
   title("\nDEVICES:\n");
-  newln();
-
-  read_proc_file("/proc/devices", NULL, NULL);
+  sys_devices_info();
 }
