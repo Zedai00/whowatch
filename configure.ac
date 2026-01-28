@@ -32,7 +32,6 @@ LDFLAGS="$LDFLAGS -rdynamic"
 
 dnl Checks for libraries
 AC_CHECK_LIB([kvm], [kvm_openfiles])
-AC_CHECK_LIB([geom], [geom_gettree], [LIBS="$LIBS -lgeom"], [AC_MSG_ERROR([libgeom not found])])
 CURS=0
 AC_CHECK_LIB([ncurses], [scrollok], [CURS=1; LIBS="$LIBS -lncurses"])
 if test "$CURS" != "1"; then
@@ -120,6 +119,11 @@ case "$host_os" in
     is_linux=yes
     ;;
 esac
+
+if test "$is_freebsd" = yes; then
+  AC_CHECK_LIB([geom], [geom_gettree], [LIBS="$LIBS -lgeom"], [AC_MSG_ERROR([libgeom not found])])
+fi
+
 
 AM_CONDITIONAL([FREEBSD], [test "x$is_freebsd" = "xyes"])
 AM_CONDITIONAL([LINUX],   [test "x$is_linux"   = "xyes"])

@@ -3,6 +3,7 @@
 #include <libgeom.h>
 #include <machine/param.h>
 #include <stdint.h>
+#include <stdlib.h>
 #include <string.h>
 #include <sys/linker.h>
 #include <sys/mount.h>
@@ -165,14 +166,97 @@ void sys_modules_info() {
   }
 }
 
+static struct flaglist {
+  int flag;
+  const char str[32]; /* must be longer than the longest one. */
+} fl[] = {
+    {
+        .flag = VFCF_STATIC,
+        .str = "static",
+    },
+    {
+        .flag = VFCF_NETWORK,
+        .str = "network",
+    },
+    {
+        .flag = VFCF_READONLY,
+        .str = "read-only",
+    },
+    {
+        .flag = VFCF_SYNTHETIC,
+        .str = "synthetic",
+    },
+    {
+        .flag = VFCF_LOOPBACK,
+        .str = "loopback",
+    },
+    {
+        .flag = VFCF_UNICODE,
+        .str = "unicode",
+    },
+    {
+        .flag = VFCF_JAIL,
+        .str = "jail",
+    },
+    {
+        .flag = VFCF_DELEGADMIN,
+        .str = "delegated-administration",
+    },
+};
+
+static const char *fmt_flags(int flags) {
+  static char buf[sizeof(struct flaglist) * sizeof(fl)];
+
+  buf[0] = '\0';
+  for (size_t i = 0; i < (int)nitems(fl); i++) {
+    if ((flags & fl[i].flag) != 0) {
+      strlcat(buf, fl[i].str, sizeof(buf));
+      strlcat(buf, ", ", sizeof(buf));
+    }
+  }
+
+  /* Zap the trailing comma + space. */
+  if (buf[0] != '\0')
+    buf[strlen(buf) - 2] = '\0';
+  return (buf);
+}
+
+void sys_filesystems_info() {
+  struct xvfsconf *xvfsp;
+  size_t buf;
+  if (sysctlbyname("vfs.conflist", NULL, &buf, NULL, 0) == -1) {
+    no_info();
+    return;
+  }
+  xvfsp = malloc(buf);
+  if (sysctlbyname("vfs.conflist", xvfsp, &buf, NULL, 0) == -1) {
+    no_info();
+    free(xvfsp);
+    return;
+  }
+
+  println("%-16.16s  %s\n", "Filesystem", "Flags");
+  println("---------------- ---------------\n");
+  size_t cnt = buf / sizeof(struct xvfsconf);
+  for (int i = 0; i < cnt; i++) {
+
+    println("%-16.16s %s\n", xvfsp[i].vfc_name, fmt_flags(xvfsp[i].vfc_flags));
+  }
+  free(xvfsp);
+}
+
 void sys_partitions_info() {
   struct gmesh mesh;
   struct gclass *classp;
   struct ggeom *geomp;
   struct gprovider *providerp;
-  geom_gettree(&mesh);
+  if (geom_gettree(&mesh) == -1) {
+    no_info();
+    return;
+  };
 
-  println("Name Size\n");
+  println("%-16.16s %s\n", "Name", "Size");
+  println("---------------- ---------------\n");
   LIST_FOREACH(classp, &mesh.lg_class, lg_class) {
     if (strcmp(classp->lg_name, "DISK") != 0 &&
         strcmp(classp->lg_name, "PART") != 0) {
@@ -180,7 +264,7 @@ void sys_partitions_info() {
     }
     LIST_FOREACH(geomp, &classp->lg_geom, lg_geom) {
       LIST_FOREACH(providerp, &geomp->lg_provider, lg_provider) {
-        println("%s %lld\n", providerp->lg_name,
+        println("%-16.16s %lld\n", providerp->lg_name,
                 (unsigned long long)providerp->lg_mediasize);
       }
     }

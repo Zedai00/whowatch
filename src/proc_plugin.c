@@ -541,7 +541,7 @@ void esys(void *unused) {
 
   title("\nFILESYSTEMS:");
   newln();
-  read_proc_file("/proc/filesystems", NULL, NULL);
+  sys_filesystems_info();
 
   title("\nPARTITIONS:");
   newln();
