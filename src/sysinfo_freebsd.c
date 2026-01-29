@@ -3,10 +3,13 @@
 #include <devinfo.h>
 #include <kvm.h>
 #include <libgeom.h>
+#include <libutil.h>
 #include <machine/param.h>
 #include <stdint.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/filedesc.h>
 #include <sys/linker.h>
 #include <sys/mount.h>
 #include <sys/param.h>
@@ -217,7 +220,7 @@ static struct flaglist {
 };
 
 static const char *fmt_flags(int flags) {
-  static char buf[sizeof(struct flaglist) * sizeof(fl)];
+  static char buf[sizeof(fl) / sizeof(fl[0]) * 32 + 1];
 
   buf[0] = '\0';
   for (size_t i = 0; i < (int)nitems(fl); i++) {
@@ -332,15 +335,13 @@ time_t sys_start_time(int pid) {
 
 void sys_proc_exe(int pid) {
   int mib[4];
-  size_t len = sizeof(mib);
-  if (sysctlnametomib("kern.proc.pathname", mib, &len) == -1) {
-    no_info();
-    return;
-  }
 
+  mib[0] = CTL_KERN;
+  mib[1] = KERN_PROC;
+  mib[2] = KERN_PROC_PATHNAME;
   mib[3] = pid;
   char path[MAXPATHLEN];
-  len = sizeof(path);
+  size_t len = sizeof(path);
 
   if (sysctl(mib, 4, path, &len, NULL, 0) == -1) {
     no_info();
@@ -349,7 +350,51 @@ void sys_proc_exe(int pid) {
   print("%s\n", path);
 }
 
-void sys_proc_root(int pid) { no_info(); }
+#include <libprocstat.h>
+void sys_proc_root(int pid) {
+  struct procstat *prstat;
+  struct kinfo_proc *kp;
+  struct filestat_list *files;
+  struct filestat *fst;
+
+  prstat = procstat_open_sysctl();
+  if (!prstat) {
+    no_info();
+    return;
+  }
+  kp = kinfo_getproc(pid); // get process info
+  if (!kp) {
+    procstat_close(prstat);
+    no_info();
+    return;
+  }
+
+  files = procstat_getfiles(prstat, kp, 0);
+  if (!files) {
+    no_info();
+    free(kp);
+    procstat_close(prstat);
+    return;
+  }
+
+  int found = 0;
+  STAILQ_FOREACH(fst, files, next) {
+    if (fst->fs_uflags & PS_FST_UFLAG_RDIR) {
+      found = 1;
+      if (fst->fs_path && *fst->fs_path != '\0') {
+        print("%s\n", fst->fs_path);
+      } else {
+        print("[unknown]\n");
+      }
+    }
+  }
+  if (!found) {
+    no_info();
+  }
+  procstat_freefiles(prstat, files);
+  free(kp);
+  procstat_close(prstat);
+}
 
 void sys_proc_cwd(int pid) { no_info(); }
 

@@ -123,6 +123,8 @@ esac
 if test "$is_freebsd" = yes; then
   AC_CHECK_LIB([geom], [geom_gettree], [LIBS="$LIBS -lgeom"], [AC_MSG_ERROR([libgeom not found])])
   AC_CHECK_LIB([devinfo], [devinfo_init], [LIBS="$LIBS -ldevinfo"], [AC_MSG_ERROR([libdevinfo not found])])
+  AC_CHECK_LIB([util], [kinfo_getfile], [LIBS="$LIBS -lutil"], [AC_MSG_ERROR([libutil not found])])
+  AC_CHECK_LIB([procstat], [kinfo_getproc], [LIBS="$LIBS -lprocstat"], [AC_MSG_ERROR([libprocstat not found])])
 fi
 
 
