@@ -231,7 +231,7 @@ static void read_link(int pid, char *name) {
 
 void sys_proc_exe(int pid) { read_link(pid, "exe"); }
 
-void sys_proc_root(int pid) { no_info(); }
+void sys_proc_root(int pid) { read_link(pid, "root"); }
 
 void sys_proc_cwd(int pid) { no_info(); }
 
