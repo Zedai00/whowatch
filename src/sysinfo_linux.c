@@ -207,3 +207,34 @@ long sys_start_time(int pid) {
 
   return (time_t)(start_ticks / hz);
 }
+
+static inline char *_read_link(const char *path) {
+  static char buf[128];
+  bzero(buf, sizeof buf);
+  if (readlink(path, buf, sizeof buf) == -1)
+    return 0;
+  return buf;
+}
+
+static void read_link(int pid, char *name) {
+  char *v;
+  char pbuf[32];
+  snprintf(pbuf, sizeof pbuf, "/proc/%d/%s", pid, name);
+  v = _read_link(pbuf);
+  if (!v) {
+    no_info();
+    return;
+  }
+  println(v);
+  newln();
+}
+
+void sys_proc_exe(int pid) { read_link(pid, "exe"); }
+
+void sys_proc_root(int pid) { no_info(); }
+
+void sys_proc_cwd(int pid) { no_info(); }
+
+void sys_proc_status(int pid) { no_info(); }
+
+void sys_proc_fds(int pid) { no_info(); }

@@ -388,7 +388,7 @@ static void read_meminfo(int pid, char *name) {
  * started in seconds after system boot.
  */
 
-static void proc_starttime(int pid, char *name) {
+static void proc_starttime(int pid) {
   long i, sec;
   char *s;
   time_t btime = sys_boot_time();
@@ -405,18 +405,22 @@ static void proc_starttime(int pid, char *name) {
 
 struct proc_detail_t {
   char *title; /* title of a particular information	*/
-  void (*fn)(int pid, char *name);
+  void (*fn)(int pid);
   int t_lines; /* nr of line for a title		*/
-  char *name;  /* used only to read links		*/
+  // char *name;  /* used only to read links		*/
 };
 
 struct proc_detail_t proc_details_t[] = {
-    {"START: ", proc_starttime, 0, 0},
-    {"EXE: ", read_link, 0, "exe"},
-    {"ROOT: ", read_link, 0, "root"},
-    {"CWD: ", read_link, 0, "cwd"},
-    {"\nSTATUS:\n", read_meminfo, 2, 0},
-    {"\nFILE DESCRIPTORS:\n", open_fds, 2, 0}};
+    {"START: ", proc_starttime, 0},
+    {"EXE: ", sys_proc_exe, 0},
+    // {"ROOT: ", read_link, 0, "root"},
+    {"ROOT: ", sys_proc_root, 0},
+    // {"CWD: ", read_link, 0, "cwd"},
+    {"CWD: ", sys_proc_cwd, 0},
+    // {"\nSTATUS:\n", read_meminfo, 2, 0},
+    {"\nSTATUS:\n", sys_proc_status, 2},
+    // {"\nFILE DESCRIPTORS:\n", open_fds, 2, 0}};
+    {"\nFILE DESCRIPTORS:\n", sys_proc_fds, 2, 0}};
 
 void eproc(void *p) {
   int i;
@@ -429,7 +433,7 @@ void eproc(void *p) {
   for (i = 0; i < size; i++) {
     t = &proc_details_t[i];
     title("%s", t->title);
-    t->fn(pid, t->name);
+    t->fn(pid);
   }
 }
 

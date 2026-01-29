@@ -27,3 +27,13 @@ void sys_partitions_info(void);
 void sys_devices_info(void);
 
 time_t sys_start_time(int pid);
+
+void sys_proc_exe(int pid);
+
+void sys_proc_root(int pid);
+
+void sys_proc_cwd(int pid);
+
+void sys_proc_status(int pid);
+
+void sys_proc_fds(int pid);

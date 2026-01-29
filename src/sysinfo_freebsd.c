@@ -329,3 +329,30 @@ time_t sys_start_time(int pid) {
 
   return kp.ki_start.tv_sec;
 }
+
+void sys_proc_exe(int pid) {
+  int mib[4];
+  size_t len = sizeof(mib);
+  if (sysctlnametomib("kern.proc.pathname", mib, &len) == -1) {
+    no_info();
+    return;
+  }
+
+  mib[3] = pid;
+  char path[MAXPATHLEN];
+  len = sizeof(path);
+
+  if (sysctl(mib, 4, path, &len, NULL, 0) == -1) {
+    no_info();
+    return;
+  }
+  print("%s\n", path);
+}
+
+void sys_proc_root(int pid) { no_info(); }
+
+void sys_proc_cwd(int pid) { no_info(); }
+
+void sys_proc_status(int pid) { no_info(); }
+
+void sys_proc_fds(int pid) { no_info(); }
