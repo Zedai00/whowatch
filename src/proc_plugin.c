@@ -32,6 +32,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include "sysinfo.h"
 #include "whowatch.h"
 #include <err.h>
+#include <stdio.h>
 
 #ifdef __FreeBSD__
 #include <sys/resource.h>
@@ -382,44 +383,18 @@ static void read_meminfo(int pid, char *name) {
   read_proc_file(buf, "Uid", "VmLib");
 }
 
-#define START_TIME_POS 21
-
 /*
  * Returns time the process
  * started in seconds after system boot.
  */
-static unsigned long p_start_time(int pid) {
-  char buf[32];
-  FILE *f;
-  int i;
-  unsigned long c = 0;
-  snprintf(buf, sizeof buf, "/proc/%d/stat", pid);
-  f = fopen(buf, "r");
-  if (!f)
-    return -1;
-  while ((i = fgetc(f)) != EOF) {
-    if (i == ' ')
-      c++;
-    if (c == START_TIME_POS)
-      goto FOUND;
-  }
-  fclose(f);
-  return -1;
-FOUND:
-  i = fscanf(f, "%ld", &c);
-  fclose(f);
-  if (i != 1)
-    return -1;
-  return c / HZ;
-}
 
 static void proc_starttime(int pid, char *name) {
-  unsigned long i, sec;
+  long i, sec;
   char *s;
   time_t btime = sys_boot_time();
 
-  i = p_start_time(pid);
-  if (i == -1 || !btime) {
+  i = sys_start_time(pid);
+  if (i == -1 || btime == -1) {
     no_info();
     return;
   }

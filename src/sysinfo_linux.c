@@ -3,24 +3,30 @@
 #include <stdio.h>
 #include <string.h>
 #include <time.h>
+#include <unistd.h>
 
 time_t sys_boot_time(void) {
-  char buf[32];
+  char buf[128];
   static time_t boot_time;
+  static int init_boot_time;
   FILE *f;
 
-  if (boot_time)
+  if (init_boot_time)
     return boot_time;
-  if (!(f = fopen("/proc/stat", "r")))
-    return boot_time;
-  while (fgets(buf, sizeof buf, f))
-    if (!strncmp(buf, "btime ", 6))
-      goto FOUND;
+
+  f = fopen("/proc/stat", "r");
+  if (!f)
+    return 0;
+
+  while (fgets(buf, sizeof buf, f)) {
+    if (strncmp(buf, "btime ", 6) == 0) {
+      if (sscanf(buf + 6, "%ld", &boot_time) == 1)
+        init_boot_time = 1;
+      break;
+    }
+  }
+
   fclose(f);
-  return boot_time;
-FOUND:
-  fclose(f);
-  sscanf(buf + 5, "%ld", &boot_time);
   return boot_time;
 }
 
@@ -143,3 +149,61 @@ void sys_filesystems_info() { read_proc_file("/proc/filesystems", NULL, NULL); }
 void sys_partitions_info() { read_proc_file("/proc/partitions", NULL, NULL); }
 
 void sys_devices_info() { read_proc_file("/proc/devices", NULL, NULL); }
+
+#define START_TIME_FIELD 22
+
+long sys_start_time(int pid) {
+
+  char path[64];
+  char buf[4096];
+  FILE *f;
+  char *p;
+  long long start_ticks;
+  long hz;
+
+  snprintf(path, sizeof(path), "/proc/%d/stat", pid);
+  f = fopen(path, "r");
+  if (!f) {
+    return -1;
+  }
+
+  if (!fgets(buf, sizeof(buf), f)) {
+    fclose(f);
+    return -1;
+  }
+  fclose(f);
+
+  /*
+   * Format:
+   * pid (comm) state ppid ... starttime
+   * comm can contain spaces → must skip () properly
+   */
+
+  p = strchr(buf, ')');
+  if (!p)
+    return -1;
+  p++; // past (comm)
+
+  /* starttime is field 22 → count fields after comm */
+  int field = 3; /* state is field 3 */
+  while (*p && field < START_TIME_FIELD) {
+    if (*p == ' ') {
+      field++;
+    }
+    p++;
+  }
+
+  if (field != START_TIME_FIELD) {
+    return -1;
+  }
+
+  if (sscanf(p, "%lld", &start_ticks) != 1) {
+    return -1;
+  }
+
+  hz = sysconf(_SC_CLK_TCK);
+  if (hz < 0)
+    return -1;
+
+  return (time_t)(start_ticks / hz);
+}

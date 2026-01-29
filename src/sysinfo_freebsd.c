@@ -1,6 +1,7 @@
 #include "pluglib.h"
 #include "sysinfo.h"
 #include <devinfo.h>
+#include <kvm.h>
 #include <libgeom.h>
 #include <machine/param.h>
 #include <stdint.h>
@@ -14,19 +15,29 @@
 #include <sys/sysctl.h>
 #include <sys/time.h>
 #include <sys/types.h>
+#include <sys/user.h>
 #include <time.h>
 
 static inline void no_info(void) { println("Information unavailable.\n"); }
 
 time_t sys_boot_time() {
   static time_t boot_time;
+  static int init_boot_time;
+
+  if (init_boot_time)
+    return boot_time;
+
   struct timeval tv;
   size_t len = sizeof(tv);
   int mib[2];
   mib[0] = CTL_KERN;
   mib[1] = KERN_BOOTTIME;
-  sysctl(mib, 2, &tv, &len, NULL, 0);
+  if (sysctl(mib, 2, &tv, &len, NULL, 0) == -1) {
+    boot_time = -1;
+    return boot_time;
+  }
   boot_time = tv.tv_sec;
+  init_boot_time = 1;
   return boot_time;
 }
 
@@ -236,12 +247,12 @@ void sys_filesystems_info() {
     return;
   }
 
-  println("%-16.16s  %s\n", "Filesystem", "Flags");
-  println("---------------- ---------------\n");
+  println("%-20.20s  %s\n", "Filesystem", "Flags");
+  println("-------------------- -------------------\n");
   size_t cnt = buf / sizeof(struct xvfsconf);
   for (int i = 0; i < cnt; i++) {
 
-    println("%-16.16s %s\n", xvfsp[i].vfc_name, fmt_flags(xvfsp[i].vfc_flags));
+    println("%-20.20s %s\n", xvfsp[i].vfc_name, fmt_flags(xvfsp[i].vfc_flags));
   }
   free(xvfsp);
 }
@@ -256,8 +267,8 @@ void sys_partitions_info() {
     return;
   };
 
-  println("%-16.16s %s\n", "Name", "Size");
-  println("---------------- ---------------\n");
+  println("%-20.20s %s\n", "Name", "Size");
+  println("-------------------- -------------------\n");
   LIST_FOREACH(classp, &mesh.lg_class, lg_class) {
     if (strcmp(classp->lg_name, "DISK") != 0 &&
         strcmp(classp->lg_name, "PART") != 0) {
@@ -265,7 +276,7 @@ void sys_partitions_info() {
     }
     LIST_FOREACH(geomp, &classp->lg_geom, lg_geom) {
       LIST_FOREACH(providerp, &geomp->lg_provider, lg_provider) {
-        println("%-16.16s %lld\n", providerp->lg_name,
+        println("%-20.20s %lld\n", providerp->lg_name,
                 (unsigned long long)providerp->lg_mediasize);
       }
     }
@@ -298,4 +309,23 @@ void sys_devices_info() {
   println("%-20.20s %-20.20s\n", "NAME", "DRIVER");
   println("-------------------- -------------------\n");
   devinfo_foreach_device_child(root, print_device, NULL);
+}
+
+time_t sys_start_time(int pid) {
+  struct kinfo_proc kp;
+  int mib[4];
+  size_t len = sizeof(kp);
+  mib[0] = CTL_KERN;
+  mib[1] = KERN_PROC;
+  mib[2] = KERN_PROC_PID;
+  mib[3] = pid;
+
+  if (sysctl(mib, 4, &kp, &len, NULL, 0) == -1) {
+    return -1;
+  }
+
+  if (len == 0)
+    return -1;
+
+  return kp.ki_start.tv_sec;
 }

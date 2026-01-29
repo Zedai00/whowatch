@@ -25,3 +25,5 @@ void sys_filesystems_info(void);
 void sys_partitions_info(void);
 
 void sys_devices_info(void);
+
+time_t sys_start_time(int pid);
