@@ -252,6 +252,10 @@ void sys_proc_fds(int pid) {
 
   snprintf(path, sizeof(path), "/proc/%d/fd", pid);
   d = opendir(path);
+  if (!d) {
+    no_info();
+    return;
+  }
 
   while ((de = readdir(d)) != NULL) {
     if (de->d_name[0] == '.')

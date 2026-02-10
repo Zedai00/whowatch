@@ -20,6 +20,7 @@
 #include <sys/types.h>
 #include <sys/user.h>
 #include <time.h>
+#include <unistd.h>
 
 static inline void no_info(void) { println("Information unavailable.\n"); }
 
@@ -442,6 +443,96 @@ void sys_proc_cwd(int pid) {
   procstat_close(prstat);
 }
 
-void sys_proc_status(int pid) { no_info(); }
+void sys_proc_status(int pid) {
+  struct procstat *ps;
+  struct kinfo_proc *kp;
+  unsigned int cnt;
 
-void sys_proc_fds(int pid) { no_info(); }
+  ps = procstat_open_sysctl();
+  kp = procstat_getprocs(ps, KERN_PROC_PID, pid, &cnt);
+
+  println("Name:\t%s\n", kp->ki_comm);
+  println("Pid:\t%d\n", kp->ki_pid);
+  println("PPid:\t%d\n", kp->ki_ppid);
+  println("State:\t%d\n", kp->ki_stat);
+  println("Threads:\t%d\n", kp->ki_numthreads);
+  println("Uid:\t%d\n", kp->ki_uid);
+  println("VmSize:\t%ju KB\n", (uintmax_t)kp->ki_size / 1024);
+  println("VmRSS:\t%ju KB\n", (uintmax_t)kp->ki_rssize * getpagesize() / 1024);
+}
+
+static const char *fstype_fallback(const struct filestat *fst) {
+  switch (fst->fs_type) {
+  case PS_FST_TYPE_SOCKET:
+    return "socket";
+  case PS_FST_TYPE_PIPE:
+    return "pipe";
+  case PS_FST_TYPE_KQUEUE:
+    return "kqueue";
+  case PS_FST_TYPE_VNODE:
+    return "vnode";
+  default:
+    return "anon";
+  }
+}
+
+static const char *fstype_str(int t) {
+  switch (t) {
+  case PS_FST_TYPE_VNODE:
+    return "vnode";
+  case PS_FST_TYPE_SOCKET:
+    return "socket";
+  case PS_FST_TYPE_PIPE:
+    return "pipe";
+  case PS_FST_TYPE_KQUEUE:
+    return "kqueue";
+  case PS_FST_TYPE_SHM:
+    return "shm";
+  default:
+    return "other";
+  }
+}
+
+void sys_proc_fds(pid_t pid) {
+  struct procstat *ps;
+  struct kinfo_proc *kp;
+  struct filestat_list *fl;
+  struct filestat *fst;
+  unsigned int cnt;
+
+  ps = procstat_open_sysctl();
+  if (!ps) {
+    perror("procstat_open_sysctl");
+    return;
+  }
+
+  kp = procstat_getprocs(ps, KERN_PROC_PID, pid, &cnt);
+  if (!kp || cnt == 0) {
+    no_info();
+    procstat_close(ps);
+    return;
+  }
+
+  fl = procstat_getfiles(ps, kp, 0);
+  if (!fl) {
+    no_info();
+    procstat_freeprocs(ps, kp);
+    procstat_close(ps);
+    return;
+  }
+
+  println("%-4s %-7s %s\n", "FD", "TYPE", "PATH");
+
+  STAILQ_FOREACH(fst, fl, next) {
+    println("%-4d %-7s", fst->fs_fd, fstype_str(fst->fs_type));
+
+    if (fst->fs_path && fst->fs_path[0] != '\0')
+      println(" %s", fst->fs_path);
+
+    println("\n");
+  }
+
+  procstat_freefiles(ps, fl);
+  procstat_freeprocs(ps, kp);
+  procstat_close(ps);
+}
