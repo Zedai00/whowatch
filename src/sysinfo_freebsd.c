@@ -351,6 +351,7 @@ void sys_proc_exe(int pid) {
 }
 
 #include <libprocstat.h>
+
 void sys_proc_root(int pid) {
   struct procstat *prstat;
   struct kinfo_proc *kp;
@@ -396,7 +397,50 @@ void sys_proc_root(int pid) {
   procstat_close(prstat);
 }
 
-void sys_proc_cwd(int pid) { no_info(); }
+void sys_proc_cwd(int pid) {
+  struct procstat *prstat;
+  struct kinfo_proc *kp;
+  struct filestat_list *files;
+  struct filestat *fst;
+
+  prstat = procstat_open_sysctl();
+  if (!prstat) {
+    no_info();
+    return;
+  }
+  kp = kinfo_getproc(pid); // get process info
+  if (!kp) {
+    procstat_close(prstat);
+    no_info();
+    return;
+  }
+
+  files = procstat_getfiles(prstat, kp, 0);
+  if (!files) {
+    no_info();
+    free(kp);
+    procstat_close(prstat);
+    return;
+  }
+
+  int found = 0;
+  STAILQ_FOREACH(fst, files, next) {
+    if (fst->fs_uflags & PS_FST_UFLAG_CDIR) {
+      found = 1;
+      if (fst->fs_path && *fst->fs_path != '\0') {
+        print("%s\n", fst->fs_path);
+      } else {
+        print("[unknown]\n");
+      }
+    }
+  }
+  if (!found) {
+    no_info();
+  }
+  procstat_freefiles(prstat, files);
+  free(kp);
+  procstat_close(prstat);
+}
 
 void sys_proc_status(int pid) { no_info(); }
 
