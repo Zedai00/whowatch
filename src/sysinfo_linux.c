@@ -233,8 +233,38 @@ void sys_proc_exe(int pid) { read_link(pid, "exe"); }
 
 void sys_proc_root(int pid) { read_link(pid, "root"); }
 
-void sys_proc_cwd(int pid) { no_info(); }
+void sys_proc_cwd(int pid) { read_link(pid, "cwd"); }
 
-void sys_proc_status(int pid) { no_info(); }
+static void read_meminfo(int pid) {
+  char buf[32];
+  snprintf(buf, sizeof buf, "/proc/%d/status", pid);
+  read_proc_file(buf, "Uid", "VmLib");
+}
 
-void sys_proc_fds(int pid) { no_info(); }
+void sys_proc_status(int pid) { read_meminfo(pid); }
+
+#include <dirent.h>
+
+void sys_proc_fds(int pid) {
+  DIR *d;
+  struct dirent *de;
+  char path[256], link[256];
+
+  snprintf(path, sizeof(path), "/proc/%d/fd", pid);
+  d = opendir(path);
+
+  while ((de = readdir(d)) != NULL) {
+    if (de->d_name[0] == '.')
+      continue;
+
+    snprintf(path, sizeof(path), "/proc/%d/fd/%s", pid, de->d_name);
+
+    ssize_t len = readlink(path, link, sizeof(link) - 1);
+    if (len > 0) {
+      link[len] = '\0';
+      println("%s -> %s\n", de->d_name, link);
+    }
+  }
+
+  closedir(d);
+}

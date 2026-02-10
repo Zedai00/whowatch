@@ -420,7 +420,7 @@ struct proc_detail_t proc_details_t[] = {
     // {"\nSTATUS:\n", read_meminfo, 2, 0},
     {"\nSTATUS:\n", sys_proc_status, 2},
     // {"\nFILE DESCRIPTORS:\n", open_fds, 2, 0}};
-    {"\nFILE DESCRIPTORS:\n", sys_proc_fds, 2, 0}};
+    {"\nFILE DESCRIPTORS:\n", sys_proc_fds, 2}};
 
 void eproc(void *p) {
   int i;
