@@ -60,30 +60,41 @@ int sys_cpu_info(struct cpu_info_t *cur_cpu_info) {
   return 0;
 }
 
+// stole it from top
+#define GETSYSCTL(name, var) getsysctl(name, &(var), sizeof(var))
+static void getsysctl(const char *name, void *ptr, size_t len) {
+  size_t nlen = len;
+
+  sysctlbyname(name, ptr, &nlen, NULL, 0);
+}
+static int pageshift;
+#define pagetok(size) ((size) << pageshift)
+
 void sys_mem_info(void) {
-  uint64_t pagesize, physmem;
-  u_int v_free, v_active, v_inactive, v_cache, swap_total, swap_used;
-  size_t len;
 
-  len = sizeof(pagesize);
-  sysctlbyname("hw.pagesize", &pagesize, &len, NULL, 0);
+  uint64_t physmem;
+  int pagesize, v_free, v_active, v_inactive, v_cache, swap_total, swap_used;
 
-  len = sizeof(physmem);
-  sysctlbyname("hw.physmem", &physmem, &len, NULL, 0);
+  GETSYSCTL("hw.pagesize", pagesize);
 
-  len = sizeof(pagesize);
-  sysctlbyname("hw.pagesize", &pagesize, &len, NULL, 0);
+  pageshift = 0;
+  int ps = pagesize;
+  while (ps > 1) {
+    pageshift++;
+    ps >>= 1;
+  }
+  pageshift -= 10; // LOG1024
 
-  len = sizeof(u_int);
-  sysctlbyname("vm.stats.vm.v_free_count", &v_free, &len, NULL, 0);
-  sysctlbyname("vm.stats.vm.v_active_count", &v_active, &len, NULL, 0);
-  sysctlbyname("vm.stats.vm.v_inactive_count", &v_inactive, &len, NULL, 0);
-  sysctlbyname("vm.stats.vm.v_cache_count", &v_cache, &len, NULL, 0);
-  sysctlbyname("vm.swap_total", &swap_total, &len, NULL, 0);
-  sysctlbyname("vm.swap_reserved", &swap_used, &len, NULL, 0);
+  GETSYSCTL("vm.stats.vm.v_free_count", v_free);
+  GETSYSCTL("vm.stats.vm.v_active_count", v_active);
+  GETSYSCTL("vm.stats.vm.v_inactive_count", v_inactive);
+  GETSYSCTL("vm.stats.vm.v_cache_count", v_cache);
+  GETSYSCTL("vm.swap_total", swap_total);
+  GETSYSCTL("vm.swap_reserved", swap_used);
+  GETSYSCTL("hw.physmem", physmem);
 
   println("MemTotal: %llu kB\n", physmem / 1024);
-  println("MemFree: %llu kB\n", (uint64_t)v_free * pagesize / 1024);
+  println("MemFree: %llu kB\n", pagetok(v_free));
   println("MemAvailable: %llu kB\n",
           (uint64_t)(v_free + v_inactive + v_cache) * pagesize / 1024);
   println("Active: %llu kB\n", (uint64_t)v_active * pagesize / 1024);
