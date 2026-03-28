@@ -4,7 +4,6 @@
 #include <kvm.h>
 #include <libgeom.h>
 #include <libutil.h>
-#include <machine/param.h>
 #include <paths.h>
 #include <stdint.h>
 #include <stdio.h>
